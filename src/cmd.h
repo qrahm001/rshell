@@ -60,7 +60,7 @@ class multiCommand : public cmd{
         commands = command;
     }
     void evaluate() {
-        int cmdctr = 0;
+        unsigned cmdctr = 0;
         while (cmdctr < commands.size() && fail == 0) {
             fail = system(commands.at(cmdctr).c_str());
                 
