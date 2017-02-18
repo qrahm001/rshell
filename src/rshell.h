@@ -20,13 +20,15 @@ class rShell {
 
 void icheck (string &input) {  //input parser helper function implementation
     char delim[] = ";,&&,||";                 //3 deliminators
-    char semi[] = ";";                  
-    char annd[] = "&&";                 
-    char orr[] =  "||";                 
+    // char semi[] = ";";                  
+    // char annd[] = "&&";                 
+    // char orr[] =  "||";                 
     int cmdCtr;
     
     cmdCtr = 0;
     vector<string> vCmdStr;                                     //vector of command string
+    vector<string> vCnctrStr;                                   //vector of connectors
+    
     
     char* userInput = (char*)input.c_str();                     //taking input as a string of characters and saving it as userinput
  
