@@ -8,7 +8,7 @@
 #include <cstring>
 
 using namespace std;
-using std::vector ;
+using std::vector;
 
 class singleCommand;
 class multiCommand;
@@ -48,7 +48,6 @@ class singleCommand : public cmd {
 
     public:
     singleCommand() {
-        //cout << "\n qazi single shade \n";
     }
     singleCommand(cmd* command) : comm(command) {} 
     void print() {
@@ -62,7 +61,6 @@ class multiCommand : public cmd{
     
     public:
     multiCommand() {
-        //cout << "\n more than 1 single qazi's (all the single ladies.) \n";
     }
     void print()
     {
@@ -70,9 +68,9 @@ class multiCommand : public cmd{
     }
 };
 
-void icheck (string &input) {  //input parser helper function implementation
-    char delim[] = ";,&&,||";                 //3 delimiters
-    char semi[] = ";";                  
+void icheck (string &input) {//input parser helper function implementation
+    char delim[] = ";,&&,||";//3 delimiters
+    char semi[] = ";";
     char annd[] = "&&";                 
     char orr[] =  "||";                 
     int cmdCtr;
