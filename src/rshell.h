@@ -145,7 +145,6 @@ void icheck (string &input) {//input parser helper function implementation
          
      
                 //system(vCmdStr[0].c_str());  //execute first command
-            
               for (unsigned y = 0; y < vDelimStr.size(); ++y){
                   
                   //cout << "this is in vDelimStr string " << vDelimStr[y] << endl;
