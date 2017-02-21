@@ -24,11 +24,13 @@ class rShell {
 
     public:
     rShell() {
-        
-        cout << " Enter command(s):" << endl;
+        while(uinput != "exit")
+        {
+       // cout << " Enter command(s):" << endl;
         getUserNameHostName();
         getline(cin, uinput);
         icheck(uinput);
+        }
     }
 };
 
@@ -46,11 +48,11 @@ class singleCommand : public cmd {
 
     public:
     singleCommand() {
-        cout << "\n qazi single shade \n";
+        //cout << "\n qazi single shade \n";
     }
     singleCommand(cmd* command) : comm(command) {} 
     void print() {
-        cout << "In addition this should appear" << endl;
+        //cout << "In addition this should appear" << endl;
     }
 };
 
@@ -60,11 +62,11 @@ class multiCommand : public cmd{
     
     public:
     multiCommand() {
-        cout << "\n more than 1 single qazi's (all the single ladies.) \n";
+        //cout << "\n more than 1 single qazi's (all the single ladies.) \n";
     }
     void print()
     {
-        cout << "We need more commands per line.";
+        //cout << "We need more commands per line.";
     }
 };
 
@@ -80,8 +82,6 @@ void icheck (string &input) {  //input parser helper function implementation
     vector<string> vCmdStr;                                     //vector of command string
     vector<string> vDelimStr;
     
-    cout <<"You entered commands: " << input << endl;           //cout whatever was inputted
-    
     
     size_t firstHash = input.find_first_of("#");               //erase anything after first hash
     if (firstHash != string::npos)
@@ -93,15 +93,14 @@ void icheck (string &input) {  //input parser helper function implementation
     char *userInputcopy = strdup(input.c_str());
     char * pnt;                                                 //char pointer is created
     
-    std::cout << userInputcopy << std::endl;
+    //std::cout << userInputcopy << std::endl;
     
     pnt=strtok( userInput, delim );         //pointer to the tokenizer which is scanning for the separating characters ||, &&, or ; (all part of the deliminators)
    
     while( pnt!= NULL )                 // while pointer does not equal the null character
     {
-        printf( "Tokenized string using delim is:: %s\n", pnt );    //prints out the tokenized string without the delim
+        //printf( "Tokenized string using delim is:: %s\n", pnt );    //prints out the tokenized string without the delim
         
-        //printf("%c\n", userInputcopy[pnt-userInput+strlen(pnt)]); //this will parse the delimitor
         
         if (userInputcopy[pnt-userInput+strlen(pnt)] == ';'){
             
@@ -118,12 +117,11 @@ void icheck (string &input) {  //input parser helper function implementation
         }
         
         vCmdStr.push_back(pnt);                     //pointer is pushed back
-        //vCmdStr.push_back(userInputcopy[pnt-userInput+strlen(pnt)].c_str()); //add delim to vector as well
         pnt = strtok( NULL, delim );                //t
         cmdCtr++;
     }
     
-        cout << "Total Number of commands entered: " << cmdCtr << endl;
+      //  cout << "Total Number of commands entered: " << cmdCtr << endl;
         
     if (cmdCtr < 1) {                                //none case for commands
          cout << "No commands entered" << endl;     //cout <<nonecase
@@ -131,23 +129,19 @@ void icheck (string &input) {  //input parser helper function implementation
      }
     
      else if (cmdCtr == 1){                             //singlecommand case
-        //cout << "Single command entered" << endl;
-        //execute single command here
-        //system(userInput);
         
             //printf ("Checking if processor is available...");
-        if (system(NULL)) puts ("Ok");  //Checkingif process is available.....
-              else exit (EXIT_FAILURE);
+        //if (system(NULL)) puts ("Ok");  //Checkingif process is available.....
+          //    else exit (EXIT_FAILURE);
         runCmdResultExitCode = system(userInput); //run single command
-        //std::cout << "runCommandResultExitCode value is " << runCmdResultExitCode << std::endl;
         
      }
      
      else   {
-         cout << "Multi commands entered" << endl;
+         //cout << "Multi commands entered" << endl;
          //execute multi commands here stored in vCmdStr array
      
-                if (system(NULL)) puts ("Ok");  //Checkingif process is available.....
+                if (system(NULL)) puts ("");  //Checkingif process is available.....
                   else exit (EXIT_FAILURE);
                 runCmdResultExitCode = system(vCmdStr[0].c_str()); //execute first command 
          
@@ -158,38 +152,38 @@ void icheck (string &input) {  //input parser helper function implementation
             
               for (unsigned y = 0; y < vDelimStr.size(); ++y){
                   
-                  cout << "this is in vDelimStr string " << vDelimStr[y] << endl;
+                  //cout << "this is in vDelimStr string " << vDelimStr[y] << endl;
                   
                   if (vDelimStr[y] == ";")
                   {
-                      cout << "semicolon case found";
-                        if (system(NULL)) puts ("Ok");  //Checking if process is available.....
+                    //  cout << "semicolon case found";
+                        if (system(NULL)) puts ("");  //Checking if process is available.....
                           else exit (EXIT_FAILURE);
                         runCmdResultExitCode = system(vCmdStr[y+1].c_str()); //execute next command 
                   }
                   else if(vDelimStr[y] == "&&")
                   {
-                      cout << "&& case found. execute next command only if first command succeeds" << endl;
+                      //cout << "&& case found. execute next command only if first command succeeds" << endl;
                       if (runCmdResultExitCode == 0) {
-                        if (system(NULL)) puts ("Ok");  //Checking if process is available.....
+                        if (system(NULL)) puts ("");  //Checking if process is available.....
                           else exit (EXIT_FAILURE);
                         runCmdResultExitCode = system(vCmdStr[y+1].c_str()); //execute next command 
                       }
                   }
                   else if(vDelimStr[y] == "||")
                   {
-                      cout << "|| found. execute next command only if first command fails" << endl;
+           //           cout << "|| found. execute next command only if first command fails" << endl;
                       if (runCmdResultExitCode != 0) {
-                        if (system(NULL)) puts ("Ok");  //Checking if process is available.....
+                        if (system(NULL)) puts ("");  //Checking if process is available.....
                           else exit (EXIT_FAILURE);
                         runCmdResultExitCode = system(vCmdStr[y+1].c_str()); //execute next command 
                       }
                   }
                   else
                   {
-                      cout << "execute this command." << endl;
+             //         cout << "execute this command." << endl;
                         
-                        if (system(NULL)) puts ("Ok");  //Checking if process is available.....
+                        if (system(NULL)) puts ("");  //Checking if process is available.....
                           else exit (EXIT_FAILURE);
                         runCmdResultExitCode = system(vCmdStr[0].c_str()); //execute next command 
                   }
@@ -227,18 +221,4 @@ char getUserNameHostName () {
         }
         return EXIT_SUCCESS;
     
-}
-
-
-// int runCmdCall(char &cmdChar){
-//           int cmdResult;
-//           //printf ("Checking if processor is available...");
-//           if (system(NULL)) puts ("Ok");
-//             else exit (EXIT_FAILURE);
-//           //printf ("Executing command DIR...\n");
-//           cmdResult=system (cmdChar);
-//           //printf ("The value returned was: %d.\n",cmdResult);
-//           //return 0;
-//           return cmdResult;
-          
-// }
+}
