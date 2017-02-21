@@ -147,9 +147,7 @@ void icheck (string &input) {  //input parser helper function implementation
          
      
                 //system(vCmdStr[0].c_str());  //execute first command
-            
-                
-            
+            
               for (unsigned y = 0; y < vDelimStr.size(); ++y){
                   
                   //cout << "this is in vDelimStr string " << vDelimStr[y] << endl;
@@ -182,22 +180,16 @@ void icheck (string &input) {  //input parser helper function implementation
                   else
                   {
              //         cout << "execute this command." << endl;
-                        
                         if (system(NULL)) puts ("");  //Checking if process is available.....
-                          else exit (EXIT_FAILURE);
+                        else exit (EXIT_FAILURE);
                         runCmdResultExitCode = system(vCmdStr[0].c_str()); //execute next command 
                   }
-                
-            
               }
-            
      }
-     
 }
 
 char getUserNameHostName () {
-    
-        //get the hostname 
+        //get the hostname
         char hostname[HOST_NAME_MAX];
         int result;
         result = gethostname(hostname, HOST_NAME_MAX);
@@ -206,19 +198,14 @@ char getUserNameHostName () {
             perror("gethostname");
             return EXIT_FAILURE;
             }
-        
         //get the user name
         char * user_name = getenv("USER");
-        
         //output user name and host name 
             std::cout << user_name << "@" << hostname << "$";
-
-        
         if (result < 0)
         {
             perror("printf");
             return EXIT_FAILURE;
         }
         return EXIT_SUCCESS;
-    
-}
+}
