@@ -1,6 +1,7 @@
 #include "rshell.h"
 
-int main() {
+int main() 
+{
     
     rShell init;
     
