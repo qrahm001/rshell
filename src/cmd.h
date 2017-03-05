@@ -164,10 +164,14 @@ class multiCmd : public cmd {
                     if (!connectors.empty()) {  //connectors vector is checked to determine whether next process is run
                         int conn = 0;
                         if (connectors.at(conn) == "&&" && success != 0) {
-                            break;
+                            if (i + 1 < par_cmds.size()) {
+                                ++i;
+                            }
                         }
                         else if (connectors.at(conn) == "||" && success == 0) {
-                            break;
+                            if (i + 1 < par_cmds.size()) {
+                                ++i;
+                            }
                         }
                         ++conn;
                     }
