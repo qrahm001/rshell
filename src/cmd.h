@@ -1,17 +1,4 @@
-#include <iostream>
-#include <vector>
-#include <string>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <unistd.h>
-#include <limits.h>
-#include <stdio.h>
-#include <pwd.h>
-
-using namespace std;
+#include "tests.h"
 
 class cmd {
     protected:
@@ -39,6 +26,7 @@ class singleCmd : public cmd {
         return;
     }
     void execute() {  //runs the stored command
+        //char* tests = (char*)"test";
         pid_t PID = fork();
         
         if (PID < 0) {
@@ -56,7 +44,22 @@ class singleCmd : public cmd {
             
             args [i] = NULL; //null so execvp knows where to stop
             
-            if ((execvp(args[0], args)) == -1) {
+            if (commands.at(0) == "test") {
+                if (commands.size() != 3 && commands.size() != 2) { //test argument # check
+                    cout << "Invalid amount of test arguments!" << endl;
+                    exit(-1);
+                }
+                tests begTest(commands);
+                bool testRes = begTest.run();
+                if (testRes == 1) {
+                    cout << "(TRUE)" << endl;
+                    exit(0);
+                }
+                cout << "(FALSE)" << endl;
+                exit(-1);
+            }
+            
+            else if ((execvp(args[0], args)) == -1) {
                 perror("execvp has failed:");
                 exit(-1);
             }
@@ -117,10 +120,11 @@ class multiCmd : public cmd {
                 pid_t PID = fork(); //fork failure case
                 if (PID < 0) {
                     perror("MultiCmd Fork() Failed:");
-                    exit(0);
+                    exit(-1);
                 }
                 
                 else if (PID == 0) { //child process, runs commands
+    
                     char* args[128];
                     unsigned k = 0; 
         
@@ -128,6 +132,21 @@ class multiCmd : public cmd {
                         args [k] = (char*)par_cmds.at(i).at(k).c_str();
                     }
                     args [k - 1] = NULL;
+                
+                    if (par_cmds.at(i).at(0) == "test") {
+                        if (commands.size() != 3 && commands.size() != 2) { //test argument # check
+                            cout << "Invalid amount of test arguments!" << endl;
+                            exit(-1);
+                        }
+                        tests begTest(par_cmds.at(i));
+                        bool testRes = begTest.run();
+                        if (testRes == 1) {
+                            cout << "(TRUE)" << endl;
+                            exit(0);
+                        }
+                        cout << "(FALSE)" << endl;
+                        exit(-1);
+                    }
                     
                     if ((execvp(args[0], args)) == -1) {
                         perror("command has failed:");
