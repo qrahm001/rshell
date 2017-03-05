@@ -25,7 +25,7 @@ class tests {
     
     public:
     tests(vector<string> &cmds) { //sets the flag as well as the target file
-        if (cmds.size() == 2) {
+        if (cmds.size() == 2 || cmds.at(2) == "NULL") {
             file = cmds.at(1);
             flag = "-e";
         }    
