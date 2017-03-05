@@ -2,4 +2,4 @@
 
 exit
 ls && exit
-kwdjkwd || exit
+kwdndn || exit
