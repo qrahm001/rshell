@@ -79,8 +79,9 @@ void Parse(string input) {
         open = tmp.find("[");
         close = tmp.find("]");
     }
-  
   input = tmp;
+  
+  //rearranges input based on 
   
   char input_ch[128];
   strcpy(input_ch, input.c_str());
