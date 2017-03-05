@@ -11,6 +11,12 @@ class cmd {
 class singleCmd : public cmd {
     public:
     singleCmd(string command) { //constructs the command, separates commands with paramater into command and parameters
+        if (command.at(0) == '(') {
+            command.erase(0, 1);
+            size_t closeP = command.find(")");
+            command.erase(closeP, 1);
+        }    
+    
         size_t found = command.find(" ");
         if (found == string::npos) { //if there are no paramters, just add the command
             commands.push_back(command);
@@ -86,6 +92,7 @@ class multiCmd : public cmd {
         commands = cmds;
         connectors = cnctrs;
         for (unsigned i = 0; i < commands.size(); ++i) {
+            
             size_t found = commands.at(i).find(" ");
             if (found == string::npos) {  //command doesnt have parameters case
                 tmp.push_back(commands.at(i));
@@ -114,6 +121,7 @@ class multiCmd : public cmd {
     void execute() { 
         int success;
         for (unsigned i = 0; i < par_cmds.size(); ++i) { //exit function
+                
                 if (par_cmds.at(i).at(0) == "exit") {
                     exit(0);
                 }
