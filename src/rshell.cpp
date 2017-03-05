@@ -68,6 +68,20 @@ void Parse(string input) {
       }
   }
   
+    //parses input for "[]" command
+    string tmp = input;
+    size_t open = tmp.find("[");
+    size_t close = tmp.find("]");
+    while (open != string::npos && close != string::npos) {
+        tmp.replace(open, 1, "test");
+        close = tmp.find("]");
+        tmp.erase(close, 1);
+        open = tmp.find("[");
+        close = tmp.find("]");
+    }
+  
+  input = tmp;
+  
   char input_ch[128];
   strcpy(input_ch, input.c_str());
   char* pch = strtok(input_ch, ";|&");
