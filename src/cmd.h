@@ -112,7 +112,7 @@ class multiCmd : public cmd {
     
     
     void execute() { 
-        int success = 0;
+        int success;
         for (unsigned i = 0; i < par_cmds.size(); ++i) { //exit function
                 if (par_cmds.at(i).at(0) == "exit") {
                     exit(0);
@@ -120,7 +120,7 @@ class multiCmd : public cmd {
                 pid_t PID = fork(); //fork failure case
                 if (PID < 0) {
                     perror("MultiCmd Fork() Failed:");
-                    exit(-1);
+                    exit(EXIT_FAILURE);
                 }
                 
                 else if (PID == 0) { //child process, runs commands
@@ -136,22 +136,23 @@ class multiCmd : public cmd {
                     if (par_cmds.at(i).at(0) == "test") {
                         if (commands.size() != 3 && commands.size() != 2) { //test argument # check
                             cout << "Invalid amount of test arguments!" << endl;
-                            exit(-1);
+                            exit(EXIT_FAILURE);
                         }
                         tests begTest(par_cmds.at(i));
                         bool testRes = begTest.run();
-                        if (testRes == 1) {
+                        if (testRes == true) {
                             cout << "(TRUE)" << endl;
                             exit(0);
                         }
                         cout << "(FALSE)" << endl;
-                        exit(-1);
+                        exit(EXIT_FAILURE);
                     }
                     
                     if ((execvp(args[0], args)) == -1) {
                         perror("command has failed:");
-                        exit(-1);
+                        exit(EXIT_FAILURE);
                     }
+                    exit(0);
                 }
                 
                 else {
@@ -159,21 +160,20 @@ class multiCmd : public cmd {
                     if (waitpid(PID, &status, 0) == -1) { //wait for child processes to end
                         perror("wait() has failed");
                     }
+                    
                     success =  WEXITSTATUS(status); //checks whether child process was succesful or failed
                     
-                    if (!connectors.empty()) {  //connectors vector is checked to determine whether next process is run
-                        int conn = 0;
-                        if (connectors.at(conn) == "&&" && success != 0) {
+                    if (connectors.size() > 0 && i < connectors.size()) {
+                        if (connectors.at(i) == "&&" && (success != 0)) {
                             if (i + 1 < par_cmds.size()) {
                                 ++i;
                             }
                         }
-                        else if (connectors.at(conn) == "||" && success == 0) {
+                        else if (connectors.at(i) == "||" && (success == 0)) {
                             if (i + 1 < par_cmds.size()) {
                                 ++i;
                             }
                         }
-                        ++conn;
                     }
                 }
         }
