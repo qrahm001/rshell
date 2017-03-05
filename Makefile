@@ -1,5 +1,13 @@
-all: 
+#macros
+compile = g++
+flags = -Wall -Werror -ansi -pedantic
+
+all:
 	mkdir -p ./bin
-	g++ -Wall -Werror -ansi -pedantic ./src/rshell.cpp -o ./bin/rshell
-src:
-	g++ -Wall -Werror -ansi -pedantic ./src/rshell.cpp -o ./bin/rshell
+	$(compile) $(flags) ./src/*.cpp -o ./bin/rshell
+	
+rshell:
+	$(compile) $(flags) ./src/*.cpp -o ./bin/rshell
+	
+clean:
+	rm -rf ./bin
