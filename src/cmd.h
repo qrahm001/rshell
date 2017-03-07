@@ -3,6 +3,7 @@
 class cmd {
     protected:
     vector<string> commands;
+    vector<string> connectors;
     
     public:
     virtual void execute() = 0;
@@ -11,12 +12,6 @@ class cmd {
 class singleCmd : public cmd {
     public:
     singleCmd(string command) { //constructs the command, separates commands with paramater into command and parameters
-        if (command.at(0) == '(') {
-            command.erase(0, 1);
-            size_t closeP = command.find(")");
-            command.erase(closeP, 1);
-        }    
-    
         size_t found = command.find(" ");
         if (found == string::npos) { //if there are no paramters, just add the command
             commands.push_back(command);
@@ -44,7 +39,7 @@ class singleCmd : public cmd {
             char* args[128];
             unsigned i = 0; 
         
-            for (i = 0; i < commands.size(); ++i) {
+            for (i = 0; i < commands.size(); ++i) { //stores commands into array 
                 args [i] = (char*)commands.at(i).c_str();
             }
             
@@ -85,14 +80,13 @@ class multiCmd : public cmd {
     private:
     vector<string> tmp;
     vector<vector<string> > par_cmds; //commands with parameters
-    vector<string> connectors; //stores connectors
     
     public:
     multiCmd(vector<string> &cmds, vector<string> &cnctrs) { //constructs the command, separates commands with paramater into command and parameters
         commands = cmds;
         connectors = cnctrs;
+        
         for (unsigned i = 0; i < commands.size(); ++i) {
-            
             size_t found = commands.at(i).find(" ");
             if (found == string::npos) {  //command doesnt have parameters case
                 tmp.push_back(commands.at(i));
@@ -185,5 +179,21 @@ class multiCmd : public cmd {
                     }
                 }
         }
+    }
+};
+
+class groupedCmd : public cmd { //grouped case ex: (echo A && echo B) || (echo C && echo D) ---separate into echo A && echo B, ||, echo C and echo D
+    private:
+    vector<size_t> groups;
+    
+    public:
+    groupedCmd(vector<string> &cmds, vector<string> &cnctrs, string input) {
+        commands = cmds;
+        connectors = cnctrs;
+        cout << input << endl;
+        return;
+    }
+    void execute() {
+        return;
     }
 };
