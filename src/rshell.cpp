@@ -49,9 +49,16 @@ void Parse(string input) {
   int cmd_cntr = 0; //counter for amnt of entered commands
   singleCmd* sCmd;
   multiCmd* mCmd;
+  groupedCmd* gCmd;
   
   for (unsigned i = 0; i < input.size(); ++i) { //pushes connectors into  a vector
-      if (input.at(i) == ';') {
+      if (input.at(i) == '(') {
+        cnctrs.push_back("(");
+      }
+      else if (input.at(i) == ')') {
+        cnctrs.push_back(")");
+      }
+      else if (input.at(i) == ';') {
           cnctrs.push_back(";");
       }
       else if (input.at(i) == '&') {
@@ -81,15 +88,14 @@ void Parse(string input) {
     }
   input = tmp;
   
-  //rearranges input based on 
   
   char input_ch[128];
   strcpy(input_ch, input.c_str());
-  char* pch = strtok(input_ch, ";|&");
+  char* pch = strtok(input_ch, ";|&()");
   
   while(pch != NULL) {
       cmds.push_back(pch);
-      pch = strtok(NULL, ";|&");
+      pch = strtok(NULL, ";|&()");
       ++cmd_cntr;
   }
      
@@ -99,8 +105,14 @@ void Parse(string input) {
     }
   
     else if (cmd_cntr > 1) { //multiple commands case
-      mCmd = new multiCmd(cmds, cnctrs);
-      mCmd->execute();
+      if ((input.find("(") != string::npos) && (input.find(")") != string::npos)) { //grouped multi-commands case
+        gCmd = new groupedCmd(cmds, cnctrs, input);
+        gCmd->execute();
+      }
+      else {
+        mCmd = new multiCmd(cmds, cnctrs); //normal multi command case
+        mCmd->execute();
+      }
     }
     
     else {
@@ -110,9 +122,7 @@ void Parse(string input) {
 }
 
   
-
 void Hash(string &input){
-    
     size_t firstHash = input.find_first_of("#");               //erase anything after first hash
     if (firstHash != string::npos)
     {
