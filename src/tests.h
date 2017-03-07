@@ -25,14 +25,14 @@ class tests {
     
     public:
     tests(vector<string> &cmds) { //sets the flag as well as the target file
-        if (cmds.size() == 2 || cmds.at(2) == "NULL") {
+        if (cmds.size() == 2 || cmds.at(2) == "NULL") { // sets default case
             file = cmds.at(1);
             flag = "-e";
         }    
     
-        else {
+        else { //sets other cases
             
-            if ((cmds.at(1) != "-f" && cmds.at(1) != "-d")) {
+            if ((cmds.at(1) != "-f" && cmds.at(1) != "-d")) { 
                 file = cmds.at(1);
                 flag = "-e";
             }
