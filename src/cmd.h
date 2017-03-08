@@ -126,7 +126,6 @@ class multiCmd : public cmd {
                 }
                 
                 else if (PID == 0) { //child process, runs commands
-    
                     char* args[128];
                     unsigned k = 0; 
         
@@ -159,41 +158,70 @@ class multiCmd : public cmd {
                 
                 else {
                     int status; // passed into waitpid
+                    bool gCase = false;
+                    bool gSucc = false;
                     if (waitpid(PID, &status, 0) == -1) { //wait for child processes to end
                         perror("wait() has failed");
                     }
                     
                     success =  WEXITSTATUS(status); //checks whether child process was succesful or failed
                     
-                    if (connectors.size() > 0 && i < connectors.size()) {
-                        if (connectors.at(i) == "&&" && (success != 0)) {
+                    // for (unsigned l = 0; l < par_cmds.size(); ++l) { check par_cmds
+                    //     cout << endl << "Ran Cmd: ";
+                    //         for (unsigned j = 0; j < par_cmds.at(l).size(); ++j) {
+                    //             cout << par_cmds.at(l).at(j) << " ";
+                    //         }
+                    //     cout << endl << "Connector: " << connectors.at(l);
+                    // }
+                    // cout << endl;
+                    
+                    
+                    // for (unsigned l = 0; l < commands.size(); ++l) {   //check commands
+                    //     cout << endl << "Ran Cmd: " << commands.at(l);
+                    //     cout << endl << "Connector: " << connectors.at(l);
+                    // }
+                    // cout << endl << "cmds: " << commands.size() << endl << "cnctrs: " << connectors.size() << endl;
+                    
+                    if (connectors.size() > commands.size()) { // group mult commands
+                        if (connectors.at(i) == "(") {
+                            gCase = true;
+                        }
+                        
+                        else if (connectors.at(i) == ")") {
+                            success = !gSucc;
+                            gCase = false;
+                            gSucc = false;
+                            ++i;
+                        }
+                        
+                        if (connectors.at(i) == "&&" && (success != 0)) { //&& case
                             if (i + 1 < par_cmds.size()) {
                                 ++i;
                             }
                         }
-                        else if (connectors.at(i) == "||" && (success == 0)) {
+                        else if (connectors.at(i) == "||" && (success == 0)) { //|| case
+                            if (i + 1 < par_cmds.size()) {
+                                ++i;
+                            }
+                        }
+                        else if (gCase == true) {
+                            gSucc = true;
+                        }
+                    }
+                    
+                    else if (i < connectors.size() && !connectors.empty()) { //normal multi commands
+                        if (connectors.at(i) == "&&" && (success != 0)) { //&& case
+                            if (i + 1 < par_cmds.size()) {
+                                ++i;
+                            }
+                        }
+                        else if (connectors.at(i) == "||" && (success == 0)) { //|| case
                             if (i + 1 < par_cmds.size()) {
                                 ++i;
                             }
                         }
                     }
                 }
+            }
         }
-    }
-};
-
-class groupedCmd : public cmd { //grouped case ex: (echo A && echo B) || (echo C && echo D) ---separate into echo A && echo B, ||, echo C and echo D
-    private:
-    vector<size_t> groups;
-    
-    public:
-    groupedCmd(vector<string> &cmds, vector<string> &cnctrs, string input) {
-        commands = cmds;
-        connectors = cnctrs;
-        cout << input << endl;
-        return;
-    }
-    void execute() {
-        return;
-    }
 };
