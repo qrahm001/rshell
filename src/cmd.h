@@ -114,9 +114,9 @@ class multiCmd : public cmd {
     
     void execute() { 
         int success;
-        for (unsigned i = 0; i < par_cmds.size(); ++i) { //exit function
+        for (unsigned i = 0; i < par_cmds.size(); ++i) { 
                 
-                if (par_cmds.at(i).at(0) == "exit") {
+                if (par_cmds.at(i).at(0) == "exit") { //exit function
                     exit(0);
                 }
                 pid_t PID = fork(); //fork failure case
@@ -158,58 +158,31 @@ class multiCmd : public cmd {
                 
                 else {
                     int status; // passed into waitpid
-                    bool gCase = false;
-                    bool gSucc = false;
                     if (waitpid(PID, &status, 0) == -1) { //wait for child processes to end
                         perror("wait() has failed");
                     }
                     
                     success =  WEXITSTATUS(status); //checks whether child process was succesful or failed
                     
-                    // for (unsigned l = 0; l < par_cmds.size(); ++l) { check par_cmds
-                    //     cout << endl << "Ran Cmd: ";
-                    //         for (unsigned j = 0; j < par_cmds.at(l).size(); ++j) {
-                    //             cout << par_cmds.at(l).at(j) << " ";
-                    //         }
-                    //     cout << endl << "Connector: " << connectors.at(l);
-                    // }
-                    // cout << endl;
-                    
-                    
-                    // for (unsigned l = 0; l < commands.size(); ++l) {   //check commands
-                    //     cout << endl << "Ran Cmd: " << commands.at(l);
-                    //     cout << endl << "Connector: " << connectors.at(l);
-                    // }
-                    // cout << endl << "cmds: " << commands.size() << endl << "cnctrs: " << connectors.size() << endl;
-                    
-                    if (connectors.size() > commands.size()) { // group mult commands
-                        if (connectors.at(i) == "(") {
-                            gCase = true;
-                        }
-                        
-                        else if (connectors.at(i) == ")") {
-                            success = !gSucc;
-                            gCase = false;
-                            gSucc = false;
-                            ++i;
-                        }
-                        
-                        if (connectors.at(i) == "&&" && (success != 0)) { //&& case
-                            if (i + 1 < par_cmds.size()) {
-                                ++i;
+                    if (connectors.size() > par_cmds.size()) { // group mult commands
+                        if (connectors.at(i) == ")") {
+                            //cout << "here" << " "<< commands.at(i + 2) << i << endl;
+                            if ((connectors.at(i + 1) == "||" && success == 0) || (connectors.at(i + 1) == "&&" && success != 0)) {
+                                i = par_cmds.size();
                             }
                         }
-                        else if (connectors.at(i) == "||" && (success == 0)) { //|| case
-                            if (i + 1 < par_cmds.size()) {
+                        
+                        if (i < par_cmds.size()) {
+                            if (connectors.at(i) == "&&" && (success != 0)) { //&& case
                                 ++i;
                             }
-                        }
-                        else if (gCase == true) {
-                            gSucc = true;
+                            else if (connectors.at(i) == "||" && (success == 0)) { //|| case
+                                ++i;
+                            }
                         }
                     }
                     
-                    else if (i < connectors.size() && !connectors.empty()) { //normal multi commands
+                    else if (connectors.size() < par_cmds.size() && i < connectors.size()) { //normal multi commands
                         if (connectors.at(i) == "&&" && (success != 0)) { //&& case
                             if (i + 1 < par_cmds.size()) {
                                 ++i;
