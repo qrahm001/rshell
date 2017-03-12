@@ -114,13 +114,15 @@ class multiCmd : public cmd {
     
     void execute() { 
         int success;
-        for (unsigned i = 0; i < par_cmds.size(); ++i) { 
-                
-                if (par_cmds.at(i).at(0) == "exit") { //exit function
+        bool group = false;
+        bool groupCheck = false;
+        while (par_cmds.size() > 0) { 
+                if (par_cmds.at(0).at(0) == "exit") { //exit function
                     exit(0);
                 }
-                pid_t PID = fork(); //fork failure case
-                if (PID < 0) {
+                pid_t PID = fork(); 
+                
+                if (PID < 0) { //case if fork failed
                     perror("MultiCmd Fork() Failed:");
                     exit(EXIT_FAILURE);
                 }
@@ -129,17 +131,17 @@ class multiCmd : public cmd {
                     char* args[128];
                     unsigned k = 0; 
         
-                    for (k = 0; k < par_cmds.at(i).size(); ++k) {
-                        args [k] = (char*)par_cmds.at(i).at(k).c_str();
+                    for (k = 0; k < par_cmds.at(0).size(); ++k) {
+                        args [k] = (char*)par_cmds.at(0).at(k).c_str();
                     }
                     args [k - 1] = NULL;
                 
-                    if (par_cmds.at(i).at(0) == "test") {
+                    if (par_cmds.at(0).at(0) == "test") { //if command is "test" case
                         if (commands.size() != 3 && commands.size() != 2) { //test argument # check
                             cout << "Invalid amount of test arguments!" << endl;
                             exit(EXIT_FAILURE);
                         }
-                        tests begTest(par_cmds.at(i));
+                        tests begTest(par_cmds.at(0));
                         bool testRes = begTest.run();
                         if (testRes == true) {
                             cout << "(TRUE)" << endl;
@@ -149,49 +151,60 @@ class multiCmd : public cmd {
                         exit(EXIT_FAILURE);
                     }
                     
-                    if ((execvp(args[0], args)) == -1) {
+                    if ((execvp(args[0], args)) == -1) { //executes command
                         perror("command has failed:");
                         exit(EXIT_FAILURE);
                     }
                     exit(0);
                 }
                 
-                else {
+                else { //parent
                     int status; // passed into waitpid
                     if (waitpid(PID, &status, 0) == -1) { //wait for child processes to end
                         perror("wait() has failed");
                     }
                     
                     success =  WEXITSTATUS(status); //checks whether child process was succesful or failed
-                    
-                    if (connectors.size() > par_cmds.size()) { // group mult commands
-                        if (connectors.at(i) == ")") {
-                            //cout << "here" << " "<< commands.at(i + 2) << i << endl;
-                            if ((connectors.at(i + 1) == "||" && success == 0) || (connectors.at(i + 1) == "&&" && success != 0)) {
-                                i = par_cmds.size();
+                    par_cmds.erase(par_cmds.begin());
+                    while (par_cmds.size() > 0 && par_cmds.at(0).at(0) == "NULL") {
+                        par_cmds.erase(par_cmds.begin());
+                    }
+
+                    if (connectors.size() > 0) { // logic commands
+                        if (connectors.at(0) == "(") { //opening parenthesis means next few commands are grouped
+                            group = true;
+                            connectors.erase(connectors.begin());
+                        }
+                        else if (connectors.at(0) == ")") { //closing parenthesis means grouped commands over
+                            connectors.erase(connectors.begin());
+                            if (group == true) { //sets success value to overall group success
+                                if (groupCheck == true) {
+                                    success = 0;
+                                }
+                                else {
+                                    success = 1;
+                                }
+                                groupCheck = false;
                             }
                         }
                         
-                        if (i < par_cmds.size()) {
-                            if (connectors.at(i) == "&&" && (success != 0)) { //&& case
-                                ++i;
+                        if (connectors.size() > 0) { //decides whether next command(s) are skipped or run
+                            if (par_cmds.size() > 0) {
+                                if ((connectors.at(0) == "&&" && success != 0) || (connectors.at(0) == "||" && success == 0)) {
+                                    if (group == true) {
+                                        group = false;
+                                        while (connectors.size() > 0 && par_cmds.size() > 0 && connectors.at(0) != ")") {
+                                            par_cmds.erase(par_cmds.begin());
+                                            connectors.erase(connectors.begin());
+                                        }
+                                    }
+                                    else {
+                                        par_cmds.erase(par_cmds.begin());
+                                    }
+                                }
+                                groupCheck = true;
                             }
-                            else if (connectors.at(i) == "||" && (success == 0)) { //|| case
-                                ++i;
-                            }
-                        }
-                    }
-                    
-                    else if (connectors.size() < par_cmds.size() && i < connectors.size()) { //normal multi commands
-                        if (connectors.at(i) == "&&" && (success != 0)) { //&& case
-                            if (i + 1 < par_cmds.size()) {
-                                ++i;
-                            }
-                        }
-                        else if (connectors.at(i) == "||" && (success == 0)) { //|| case
-                            if (i + 1 < par_cmds.size()) {
-                                ++i;
-                            }
+                            connectors.erase(connectors.begin());
                         }
                     }
                 }
