@@ -200,6 +200,7 @@ class multiCmd : public cmd {
                                     }
                                     else {
                                         par_cmds.erase(par_cmds.begin());
+                                        connectors.erase(connectors.begin());
                                     }
                                 }
                                 groupCheck = true;
