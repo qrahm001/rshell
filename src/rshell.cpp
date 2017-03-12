@@ -85,6 +85,9 @@ void Parse(string input) {
         open = tmp.find("[");
         close = tmp.find("]");
     }
+  while (tmp.at(0) == ' ') { //removes spaces from beginning of input
+    tmp.erase(0, 1);
+  }
   input = tmp;
   
   
