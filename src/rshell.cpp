@@ -33,10 +33,20 @@ void Login() {
     string input;
     while (input != "exit") {
       printf("[%s@%s]$ ", p->pw_name, host.c_str());  //%s for formatting, first one outputs first paramter, 2nd one outputs second parameter ...
-        
-      getline(cin, input);  //gets userinput
-      Hash(input);
-      if (input != "exit") {
+      
+      getline(cin, input);
+      
+      if (input.empty()) {
+        cout << "Enter Commands!" << endl;
+      }
+      else {
+        Hash(input);
+        if (input.empty()) {
+          cout << endl;
+        }
+      }
+      
+      if (input != "exit" && !input.empty()) {
           Parse(input);
       }
     }
