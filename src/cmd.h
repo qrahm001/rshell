@@ -60,7 +60,7 @@ class singleCmd : public cmd {
                 exit(-1);
             }
             
-            else if ((execvp(args[0], args)) == -1) {
+            else if ((execvp(args[0], args)) == -1) { 
                 perror("execvp has failed:");
                 exit(-1);
             }
@@ -137,7 +137,7 @@ class multiCmd : public cmd {
                     args [k - 1] = NULL;
                 
                     if (par_cmds.at(0).at(0) == "test") { //if command is "test" case
-                        if (commands.size() != 3 && commands.size() != 2) { //test argument # check
+                        if (commands.size() > 3 || commands.size() < 2) { //test argument # check
                             cout << "Invalid amount of test arguments!" << endl;
                             exit(EXIT_FAILURE);
                         }
@@ -169,7 +169,7 @@ class multiCmd : public cmd {
                     while (par_cmds.size() > 0 && par_cmds.at(0).at(0) == "NULL") {
                         par_cmds.erase(par_cmds.begin());
                     }
-
+                    
                     if (connectors.size() > 0) { // logic commands
                         if (connectors.at(0) == "(") { //opening parenthesis means next few commands are grouped
                             group = true;
@@ -190,12 +190,22 @@ class multiCmd : public cmd {
                         
                         if (connectors.size() > 0) { //decides whether next command(s) are skipped or run
                             if (par_cmds.size() > 0) {
-                                if ((connectors.at(0) == "&&" && success != 0) || (connectors.at(0) == "||" && success == 0)) {
-                                    if (group == true) {
+                                if ((connectors.at(0) == "&&" && success != 0) || (connectors.at(0) == "||" && success == 0)) { //case where a command would be skipped
+                                    if (connectors.size() > 1) {
+                                        if (connectors.at(1) == "(") { //case where if following commands are grouped and need to be skipped
+                                            group = true;
+                                        }
+                                    }
+                                    if (group == true) { //if current command is part of a group of commands, skip all commands up to the close parthenthesis
                                         group = false;
                                         while (connectors.size() > 0 && par_cmds.size() > 0 && connectors.at(0) != ")") {
-                                            par_cmds.erase(par_cmds.begin());
-                                            connectors.erase(connectors.begin());
+                                            if (connectors.at(0) != "&&") {
+                                                par_cmds.erase(par_cmds.begin());
+                                                connectors.erase(connectors.begin());
+                                            }
+                                            else {
+                                                break;
+                                            }
                                         }
                                     }
                                     else {
@@ -203,9 +213,13 @@ class multiCmd : public cmd {
                                         connectors.erase(connectors.begin());
                                     }
                                 }
-                                groupCheck = true;
+                                else { //command ran
+                                    groupCheck = true;
+                                }
                             }
-                            connectors.erase(connectors.begin());
+                            if (connectors.size() > 0) { //erase connector that was just used
+                                connectors.erase(connectors.begin());
+                            }
                         }
                     }
                 }
