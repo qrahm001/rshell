@@ -46,7 +46,7 @@ class singleCmd : public cmd {
             args [i] = NULL; //null so execvp knows where to stop
             
             if (commands.at(0) == "test") {
-                if (commands.size() != 3 && commands.size() != 2) { //test argument # check
+                if (commands.size() < 2) { //test argument # check
                     cout << "Invalid amount of test arguments!" << endl;
                     exit(-1);
                 }
@@ -60,7 +60,17 @@ class singleCmd : public cmd {
                 exit(-1);
             }
             
-            else if ((execvp(args[0], args)) == -1) { 
+            else {
+                for (unsigned j = 0; j < commands.size(); ++j) {
+                    //cout << commands.at(j) << " ";
+                    if (commands.at(j) == "<" || commands.at(j) == ">" || commands.at(j) == ">>" || commands.at(j) == "|") {
+                        cout << "Pipe/Dup Case Detected!" << endl;
+                        exit(0);
+                    }
+                }
+            }
+            
+            if ((execvp(args[0], args)) == -1) { 
                 perror("execvp has failed:");
                 exit(-1);
             }
@@ -137,7 +147,8 @@ class multiCmd : public cmd {
                     args [k - 1] = NULL;
                 
                     if (par_cmds.at(0).at(0) == "test") { //if command is "test" case
-                        if (commands.size() > 3 || commands.size() < 2) { //test argument # check
+                        //cout << par_cmds.at(0).at(1) << endl;
+                        if (par_cmds.size() < 2) { //test argument # check
                             cout << "Invalid amount of test arguments!" << endl;
                             exit(EXIT_FAILURE);
                         }
