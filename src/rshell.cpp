@@ -1,160 +1,246 @@
-#include "cmd.h"
+#include "tests.h"
 
-void Parse(string input);
-void Hash(string &input);
-void Login();
+class cmd {
+    protected:
+    vector<string> commands;
+    vector<string> connectors;
+    
+    public:
+    virtual void execute() = 0;
+};
 
-int main(int argc, char* argv[]) {
-    Login();
-    return 0;
-}
-
-void Login() {
-    passwd *p;
-    uid_t uid;
-    char host_arr[HOST_NAME_MAX];
-    int host_error = gethostname(host_arr, sizeof(host_arr));
-    
-    
-    if ((p = getpwuid(uid = getuid())) == NULL) { //print error if getpwuid fails
-        perror("getpwuid() error");
-    }
-    
-    else if (host_error != 0) {
-        perror("gethostname() error");  //print error if gethostname fails
-    }
-    
-    string host = host_arr;           //deletes extra stuff from hostname
-    size_t found = host.find('-');
-    if (found != string::npos) {
-      host.erase(found);
-    }  
-
-    string input;
-    while (input != "exit") {
-      printf("[%s@%s]$ ", p->pw_name, host.c_str());  //%s for formatting, first one outputs first paramter, 2nd one outputs second parameter ...
-      
-      getline(cin, input);
-      
-      if (input.empty()) {
-        cout << "Enter Commands!" << endl;
-      }
-      else {
-        Hash(input);
-        if (input.empty()) {
-          cout << endl;
+class singleCmd : public cmd {
+    public:
+    singleCmd(string command) { //constructs the command, separates commands with paramater into command and parameters
+        size_t found = command.find(" ");
+        if (found == string::npos) { //if there are no paramters, just add the command
+            commands.push_back(command);
+            return;
         }
-      }
-      
-      if (input != "exit" && !input.empty()) {
-          Parse(input);
-      }
-    }
-    return;
-}
-
-void Parse(string input) {
-  string command;
-  vector<string> cmds;
-  vector<string> cnctrs;
-  int cmd_cntr = 0; //counter for amnt of entered commands
-  singleCmd* sCmd;
-  multiCmd* mCmd;
-  
-  //parses input for "[]" command
-    string tmp = input;
-    size_t open = tmp.find("[");
-    size_t close = tmp.find("]");
-    while (open != string::npos && close != string::npos) {
-        tmp.replace(open, 1, "test");
-        close = tmp.find("]");
-        tmp.erase(close, 1);
-        open = tmp.find("[");
-        close = tmp.find("]");
-    }
-    
-    while (tmp.at(0) == ' ') { //removes spaces from beginning of input
-      tmp.erase(0, 1);
-    }
-    
-    for (unsigned i = 0; i < tmp.size(); ++i) {
-      if (tmp.at(i) == ';') {
-        if (!command.empty()) {
-          cmds.push_back(command);
-          command.clear();
-          ++cmd_cntr;
+        char input_ch[128]; //separates commands and paramteters
+        strcpy(input_ch, command.c_str());
+        char* pch = strtok(input_ch, " ");
+        while (pch != NULL) {
+            commands.push_back(pch);
+            pch = strtok(NULL, " ");
         }
-        cnctrs.push_back(";");
-      }
-      else if (tmp.at(i) == '&') {
-        if (!command.empty()) {
-          cmds.push_back(command);
-          command.clear();
-          ++cmd_cntr;
+        return;
+    }
+    void execute() {  //runs the stored command
+        //char* tests = (char*)"test";
+        pid_t PID = fork();
+        
+        if (PID < 0) {
+            perror("fork() has failed");
+            exit(-1);
         }
-        cnctrs.push_back("&&");
-        ++i;
-      }
-      else if (tmp.at(i) == '|') {
-        if (i + 1 < tmp.size()) {
-          if (tmp.at(i + 1) == '|') {
-            if (!command.empty()) {
-              cmds.push_back(command);
-              command.clear();
-              ++cmd_cntr;
+        
+        else if (PID == 0) {
+            char* args[128];
+            unsigned i = 0; 
+        
+            for (i = 0; i < commands.size(); ++i) { //stores commands into array 
+                args [i] = (char*)commands.at(i).c_str();
             }
-            cnctrs.push_back("||");
-            ++i;
-          }
+            
+            args [i] = NULL; //null so execvp knows where to stop
+            
+            if (commands.at(0) == "test") {
+                if (commands.size() < 2) { //test argument # check
+                    cout << "Invalid amount of test arguments!" << endl;
+                    exit(-1);
+                }
+                tests begTest(commands);
+                bool testRes = begTest.run();
+                if (testRes == 1) {
+                    cout << "(TRUE)" << endl;
+                    exit(0);
+                }
+                cout << "(FALSE)" << endl;
+                exit(-1);
+            }
+            
+            else {
+                for (unsigned j = 0; j < commands.size(); ++j) {
+                    //cout << commands.at(j) << " ";
+                    if (commands.at(j) == "<" || commands.at(j) == ">" || commands.at(j) == ">>" || commands.at(j) == "|") {
+                        cout << "Pipe/Dup Case Detected!" << endl;
+                        exit(0);
+                    }
+                }
+            }
+            
+            if ((execvp(args[0], args)) == -1) { 
+                perror("execvp has failed:");
+                exit(-1);
+            }
         }
-        command.push_back(tmp.at(i));
-      }
-      else if (tmp.at(i) == '(') {
-        if (!command.empty()) {
-          cmds.push_back(command);
-          command.clear();
-          ++cmd_cntr;
+        
+        else {
+            int status; // passed into waitpid
+            if (waitpid(PID, &status, 0) == -1) { //wait for child processes to end
+                perror("wait() has failed");
+            }
         }
-        cnctrs.push_back("(");
-      }
-      else if (tmp.at(i) == ')') {
-        if (!command.empty()) {
-          cmds.push_back(command);
-          command.clear();
-          ++cmd_cntr;
+        return;
+    }
+};
+
+class multiCmd : public cmd {
+    private:
+    vector<string> tmp;
+    vector<vector<string> > par_cmds; //commands with parameters
+    
+    public:
+    multiCmd(vector<string> &cmds, vector<string> &cnctrs) { //constructs the command, separates commands with paramater into command and parameters
+        commands = cmds;
+        connectors = cnctrs;
+        
+        for (unsigned i = 0; i < commands.size(); ++i) {
+            size_t found = commands.at(i).find(" ");
+            if (found == string::npos) {  //command doesnt have parameters case
+                tmp.push_back(commands.at(i));
+                tmp.push_back("NULL");
+                par_cmds.push_back(tmp);
+                tmp.clear();
+            }
+            else {
+                char input_ch[128];
+                strcpy(input_ch, commands.at(i).c_str()); //tokenizes string
+                char* pch = strtok(input_ch, " ");
+                
+                while (pch != NULL) {
+                    tmp.push_back(pch);
+                    pch = strtok(NULL, " ");
+                }
+                tmp.push_back("NULL");
+                par_cmds.push_back(tmp);
+                tmp.clear();
+            }
         }
-        cnctrs.push_back(")");
-      }
-      else {
-        command.push_back(tmp.at(i));
-      }
-    }
-    if (!command.empty()) {
-      cmds.push_back(command);
-      ++cmd_cntr;
-    }
-     
-    if (cmd_cntr == 1) { 
-      sCmd = new singleCmd(cmds.at(0)); //makes a single command
-      sCmd->execute();  //runs the command
-    }
-  
-    else if (cmd_cntr > 1) { //multiple commands case
-        mCmd = new multiCmd(cmds, cnctrs); //normal multi command case
-        mCmd->execute();
+        return;
     }
     
-    else {
-      cout << "Error: Invalid amount of commands!" << endl;
-    }
-    return;
-}
+    
+    void execute() { 
+        int success;
+        bool group = false;
+        bool groupCheck = false;
+        while (par_cmds.size() > 0) { 
+                if (par_cmds.at(0).at(0) == "exit") { //exit function
+                    exit(0);
+                }
+                pid_t PID = fork(); 
+                
+                if (PID < 0) { //case if fork failed
+                    perror("MultiCmd Fork() Failed:");
+                    exit(EXIT_FAILURE);
+                }
+                
+                else if (PID == 0) { //child process, runs commands
+                    char* args[128];
+                    unsigned k = 0; 
+        
+                    for (k = 0; k < par_cmds.at(0).size(); ++k) {
+                        args [k] = (char*)par_cmds.at(0).at(k).c_str();
+                    }
+                    args [k - 1] = NULL;
+                
+                    if (par_cmds.at(0).at(0) == "test") { //if command is "test" case
+                        //cout << par_cmds.at(0).at(1) << endl;
+                        if (par_cmds.at(0).size() < 2) { //test argument # check
+                            cout << "Invalid amount of test arguments!" << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        tests begTest(par_cmds.at(0));
+                        bool testRes = begTest.run();
+                        if (testRes == true) {
+                            cout << par_cmds.at(0).at(1) << " " << "(TRUE)" << endl;
+                            exit(0);
+                        }
+                        cout << "(FALSE)" << endl;
+                        exit(EXIT_FAILURE);
+                    }
+                    
+                    if ((execvp(args[0], args)) == -1) { //executes command
+                        perror("command has failed:");
+                        exit(EXIT_FAILURE);
+                    }
+                    exit(0);
+                }
+                
+                else { //parent
+                    int status; // passed into waitpid
+                    if (waitpid(PID, &status, 0) == -1) { //wait for child processes to end
+                        perror("wait() has failed");
+                    }
+                    
+                    success =  WEXITSTATUS(status); //checks whether child process was succesful or failed
+                    par_cmds.erase(par_cmds.begin());
+                    while (par_cmds.size() > 0 && par_cmds.at(0).at(0) == "NULL") {
+                        par_cmds.erase(par_cmds.begin());
+                    }
+                    
+                    if (connectors.size() > 0) { // logic commands
+                        if (connectors.at(0) == "(") { //opening parenthesis means next few commands are grouped
+                            group = true;
+                            connectors.erase(connectors.begin());
+                        }
+                        else if (connectors.at(0) == ")") { //closing parenthesis means grouped commands over
+                            connectors.erase(connectors.begin());
+                            if (group == true) { //sets success value to overall group success
+                                if (groupCheck == true) {
+                                    success = 0;
+                                }
+                                else {
+                                    success = 1;
+                                }
+                                groupCheck = false;
+                            }
+                        }
+                        
+                        if (connectors.size() > 0) { //decides whether next command(s) are skipped or run
+                            if (par_cmds.size() > 0) {
+                                if ((connectors.at(0) == "&&" && success != 0) || (connectors.at(0) == "||" && success == 0)) { //case where a command would be skipped
+                                    if (connectors.size() > 1) {
+                                        if (connectors.at(1) == "(") { //case where if following commands are grouped and need to be skipped
+                                            group = true;
+                                        }
+                                    }
+                                    if (group == true) { //if current command is part of a group of commands, skip all commands up to the close parthenthesis
+                                        group = false;
+                                        while (connectors.size() > 0 && par_cmds.size() > 0 && connectors.at(0) != ")") {
+                                            if (connectors.at(0) != "&&") {
+                                                par_cmds.erase(par_cmds.begin());
+                                                connectors.erase(connectors.begin());
+                                            }
+                                            else {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        par_cmds.erase(par_cmds.begin());
+                                        connectors.erase(connectors.begin());
+                                    }
+                                }
+                                else { //command ran
+                                    groupCheck = true;
+                                }
+                            }
+                            if (connectors.size() > 0) { //erase connector that was just used
+                                connectors.erase(connectors.begin());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+};
 
-  
-void Hash(string &input){
-    size_t firstHash = input.find_first_of("#");               //erase anything after first hash
-    if (firstHash != string::npos)
-    {
-        input.erase(input.begin() + firstHash, input.end());    //works
-    }
-}
+
+
+//single command pipe/dup inserted
+//TODO:
+//implement single command version
+//insert and implement onto multicommand
