@@ -54,37 +54,14 @@ void Login() {
 }
 
 void Parse(string input) {
+  string command;
   vector<string> cmds;
   vector<string> cnctrs;
   int cmd_cntr = 0; //counter for amnt of entered commands
   singleCmd* sCmd;
   multiCmd* mCmd;
   
-  for (unsigned i = 0; i < input.size(); ++i) { //pushes connectors into  a vector
-      if (input.at(i) == '(') {
-        cnctrs.push_back("(");
-      }
-      else if (input.at(i) == ')') {
-        cnctrs.push_back(")");
-      }
-      else if (input.at(i) == ';') {
-          cnctrs.push_back(";");
-      }
-      else if (input.at(i) == '&') {
-          cnctrs.push_back("&&");
-          if (i + 1 < input.size()) {
-              ++i;
-          }
-      }
-      else if (input.at(i) == '|') {
-          cnctrs.push_back("||");
-          if (i + 1 < input.size()) {
-              ++i;
-          }
-      }
-  }
-  
-    //parses input for "[]" command
+  //parses input for "[]" command
     string tmp = input;
     size_t open = tmp.find("[");
     size_t close = tmp.find("]");
@@ -95,21 +72,67 @@ void Parse(string input) {
         open = tmp.find("[");
         close = tmp.find("]");
     }
-  while (tmp.at(0) == ' ') { //removes spaces from beginning of input
-    tmp.erase(0, 1);
-  }
-  input = tmp;
-  
-  
-  char input_ch[128];
-  strcpy(input_ch, input.c_str());
-  char* pch = strtok(input_ch, ";|&()");
-  
-  while(pch != NULL) { //fills cmds vector
-      cmds.push_back(pch);
-      pch = strtok(NULL, ";|&()");
+    
+    while (tmp.at(0) == ' ') { //removes spaces from beginning of input
+      tmp.erase(0, 1);
+    }
+    
+    for (unsigned i = 0; i < tmp.size(); ++i) {
+      if (tmp.at(i) == ';') {
+        if (!command.empty()) {
+          cmds.push_back(command);
+          command.clear();
+          ++cmd_cntr;
+        }
+        cnctrs.push_back(";");
+      }
+      else if (tmp.at(i) == '&') {
+        if (!command.empty()) {
+          cmds.push_back(command);
+          command.clear();
+          ++cmd_cntr;
+        }
+        cnctrs.push_back("&&");
+        ++i;
+      }
+      else if (tmp.at(i) == '|') {
+        if (i + 1 < tmp.size()) {
+          if (tmp.at(i + 1) == '|') {
+            if (!command.empty()) {
+              cmds.push_back(command);
+              command.clear();
+              ++cmd_cntr;
+            }
+            cnctrs.push_back("||");
+            ++i;
+          }
+        }
+        command.push_back(tmp.at(i));
+      }
+      else if (tmp.at(i) == '(') {
+        if (!command.empty()) {
+          cmds.push_back(command);
+          command.clear();
+          ++cmd_cntr;
+        }
+        cnctrs.push_back("(");
+      }
+      else if (tmp.at(i) == ')') {
+        if (!command.empty()) {
+          cmds.push_back(command);
+          command.clear();
+          ++cmd_cntr;
+        }
+        cnctrs.push_back(")");
+      }
+      else {
+        command.push_back(tmp.at(i));
+      }
+    }
+    if (!command.empty()) {
+      cmds.push_back(command);
       ++cmd_cntr;
-  }
+    }
      
     if (cmd_cntr == 1) { 
       sCmd = new singleCmd(cmds.at(0)); //makes a single command
