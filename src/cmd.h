@@ -11,7 +11,9 @@ class cmd {
 
 class singleCmd : public cmd {
     public:
-    singleCmd(string command) { //constructs the command, separates commands with paramater into command and parameters
+    
+    singleCmd(string command, vector<string> &cnctrs) { //constructs the command, separates commands with paramater into command and parameters
+        connectors = cnctrs;
         size_t found = command.find(" ");
         if (found == string::npos) { //if there are no paramters, just add the command
             commands.push_back(command);
@@ -26,6 +28,7 @@ class singleCmd : public cmd {
         }
         return;
     }
+    
     void execute() {  //runs the stored command
         //char* tests = (char*)"test";
         pid_t PID = fork();
@@ -36,17 +39,9 @@ class singleCmd : public cmd {
         }
         
         else if (PID == 0) {
-            char* args[128];
-            unsigned i = 0; 
-        
-            for (i = 0; i < commands.size(); ++i) { //stores commands into array 
-                args [i] = (char*)commands.at(i).c_str();
-            }
-            
-            args [i] = NULL; //null so execvp knows where to stop
-            
+
             if (commands.at(0) == "test") {
-                if (commands.size() < 2) { //test argument # check
+                if (commands.size() != 3 && commands.size() != 2) { //test argument # check
                     cout << "Invalid amount of test arguments!" << endl;
                     exit(-1);
                 }
@@ -60,17 +55,51 @@ class singleCmd : public cmd {
                 exit(-1);
             }
             
-            else {
-                for (unsigned j = 0; j < commands.size(); ++j) {
-                    //cout << commands.at(j) << " ";
-                    if (commands.at(j) == "<" || commands.at(j) == ">" || commands.at(j) == ">>" || commands.at(j) == "|") {
-                        cout << "Pipe/Dup Case Detected!" << endl;
-                        exit(0);
+            else if (connectors.size() > 0) { //dup/pipe case
+  
+                if (connectors.at(0) == "<") {
+                    connectors.erase(connectors.begin());
+                    int in = open(commands.at(1).c_str(), O_RDONLY);
+                    commands.erase(commands.begin() + 1);
+                    if (in == -1) {
+                        perror("input file invalid");
+                        exit(EXIT_FAILURE);
                     }
+                    dup2(in, 0);
+                    close(in);
+                    in = 0;
+                }
+                        
+                if (connectors.size() > 0 && connectors.at(0) == ">") {
+                    connectors.erase(connectors.begin());
+                    //cout << connectors.at(0) << " " << par_cmds.at(0).at(0) << endl;
+                    int out = open(commands.at(1).c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+                    commands.erase(commands.begin() + 1);
+                    dup2(out, 1);
+                    close(out);
+                    out = 0;
+                }
+                
+                if (connectors.size() > 0 && connectors.at(0) == ">>") {
+                    connectors.erase(connectors.begin());
+                    int out = open(commands.at(1).c_str(), O_APPEND | O_WRONLY);
+                    commands.erase(commands.begin() + 1);
+                    dup2(out, 1);
+                    close(out);
+                    out = 0;
                 }
             }
             
-            if ((execvp(args[0], args)) == -1) { 
+            char* args[128];
+            unsigned i = 0; 
+        
+            for (i = 0; i < commands.size(); ++i) { //stores commands into array 
+                args [i] = (char*)commands.at(i).c_str();
+            }
+            
+            args [i] = NULL; //null so execvp knows where to stop
+            
+            if ((execvp(args[0], args)) == -1) {
                 perror("execvp has failed:");
                 exit(-1);
             }
@@ -123,13 +152,19 @@ class multiCmd : public cmd {
     
     
     void execute() { 
+        // int fd1[2];
+        // pipe(fd1);
+        
         int success;
         bool group = false;
         bool groupCheck = false;
+        
         while (par_cmds.size() > 0) { 
+            
                 if (par_cmds.at(0).at(0) == "exit") { //exit function
                     exit(0);
                 }
+                
                 pid_t PID = fork(); 
                 
                 if (PID < 0) { //case if fork failed
@@ -138,17 +173,9 @@ class multiCmd : public cmd {
                 }
                 
                 else if (PID == 0) { //child process, runs commands
-                    char* args[128];
-                    unsigned k = 0; 
-        
-                    for (k = 0; k < par_cmds.at(0).size(); ++k) {
-                        args [k] = (char*)par_cmds.at(0).at(k).c_str();
-                    }
-                    args [k - 1] = NULL;
                 
                     if (par_cmds.at(0).at(0) == "test") { //if command is "test" case
-                        //cout << par_cmds.at(0).at(1) << endl;
-                        if (par_cmds.size() < 2) { //test argument # check
+                        if (par_cmds.at(0).size() < 2) { //test argument # check
                             cout << "Invalid amount of test arguments!" << endl;
                             exit(EXIT_FAILURE);
                         }
@@ -161,11 +188,60 @@ class multiCmd : public cmd {
                         cout << "(FALSE)" << endl;
                         exit(EXIT_FAILURE);
                     }
+                
+                    else if (connectors.size() > 0) { //dup/pipe case
+          
+                        if (connectors.at(0) == "<") {
+                            connectors.erase(connectors.begin());
+                            int in = open(par_cmds.at(0).at(1).c_str(), O_RDONLY);
+                            par_cmds.at(0).erase(par_cmds.at(0).begin() + 1);
+                            if (in == -1) {
+                                exit(EXIT_FAILURE);
+                            }
+                            dup2(in, 0);
+                            close(in);
+                            in = 0;
+                        }
+                                
+                        if (connectors.size() > 0 && connectors.at(0) == ">") {
+                            connectors.erase(connectors.begin());
+                            //cout << connectors.at(0) << " " << par_cmds.at(0).at(0) << endl;
+                            int out = open(par_cmds.at(0).at(1).c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+                            par_cmds.at(0).erase(par_cmds.at(0).begin() + 1);
+                            dup2(out, 1);
+                            close(out);
+                            out = 0;
+                        }
+                        
+                        if (connectors.size() > 0 && connectors.at(0) == ">>") {
+                            connectors.erase(connectors.begin());
+                            int out = open(par_cmds.at(0).at(1).c_str(), O_APPEND | O_WRONLY);
+                            par_cmds.at(0).erase(par_cmds.at(0).begin() + 1);
+                            dup2(out, 1);
+                            close(out);
+                            out = 0;
+                        }
+                        
+                        // else if (connectors.size() > 0 && connectors.at(0) == "|") {
+                        //     connectors.erase(connectors.begin());
+                        //     close(fd[1]);
+                        //     dup2(fd[])
+                        // }
+                    }
+                    
+                    char* args[128];
+                    unsigned k = 0; 
+        
+                    for (k = 0; k < par_cmds.at(0).size(); ++k) {
+                        args [k] = (char*)par_cmds.at(0).at(k).c_str();
+                    }
+                    args [k - 1] = NULL;
                     
                     if ((execvp(args[0], args)) == -1) { //executes command
                         perror("command has failed:");
                         exit(EXIT_FAILURE);
                     }
+                    
                     exit(0);
                 }
                 
@@ -181,12 +257,30 @@ class multiCmd : public cmd {
                         par_cmds.erase(par_cmds.begin());
                     }
                     
+                    //cout << "Current Command: " << par_cmds.at(0).at(0) << endl;
+                    
                     if (connectors.size() > 0) { // logic commands
-                        if (connectors.at(0) == "(") { //opening parenthesis means next few commands are grouped
+                        if (connectors.at(0) == "<") {
+                            connectors.erase(connectors.begin());
+                        }
+                        if (connectors.size() > 0 && connectors.at(0) == ">") {
+                            connectors.erase(connectors.begin());
+                        }
+                        if (connectors.size() > 0 && connectors.at(0) == ">>") {
+                            connectors.erase(connectors.begin());
+                        }
+                        // if (connectors.size() > 0 && connectors.at(0) == "|") {
+                        //     connectors.erase(connectors.begin());
+                        //     close(fd1[0]);
+                        //     close(fd2[1]);
+                        // }
+                    
+                        if (connectors.size() > 0 && connectors.at(0) == "(") { //opening parenthesis means next few commands are grouped
                             group = true;
                             connectors.erase(connectors.begin());
                         }
-                        else if (connectors.at(0) == ")") { //closing parenthesis means grouped commands over
+                        
+                        else if (connectors.size() > 0 && connectors.at(0) == ")") { //closing parenthesis means grouped commands over
                             connectors.erase(connectors.begin());
                             if (group == true) { //sets success value to overall group success
                                 if (groupCheck == true) {
@@ -199,36 +293,32 @@ class multiCmd : public cmd {
                             }
                         }
                         
+                        //cout << "Current Connector: " << connectors.at(0) << endl;
                         if (connectors.size() > 0) { //decides whether next command(s) are skipped or run
                             if (par_cmds.size() > 0) {
-                                if ((connectors.at(0) == "&&" && success != 0) || (connectors.at(0) == "||" && success == 0)) { //case where a command would be skipped
-                                    if (connectors.size() > 1) {
-                                        if (connectors.at(1) == "(") { //case where if following commands are grouped and need to be skipped
-                                            group = true;
-                                        }
-                                    }
-                                    if (group == true) { //if current command is part of a group of commands, skip all commands up to the close parthenthesis
-                                        group = false;
-                                        while (connectors.size() > 0 && par_cmds.size() > 0 && connectors.at(0) != ")") {
-                                            if (connectors.at(0) != "&&") {
+                                if ((connectors.at(0) == "&&" && success != 0) || (connectors.at(0) == "||" && success == 0)) {
+                                    if (group == true || (connectors.size() > 1 && connectors.at(1) == "(")) {
+                                        while (connectors.at(0) != ")") {
+                                            if (par_cmds.size() > 0) {
                                                 par_cmds.erase(par_cmds.begin());
-                                                connectors.erase(connectors.begin());
                                             }
-                                            else {
-                                                break;
+                                            if (connectors.size() > 0) {
+                                                connectors.erase(connectors.begin());
                                             }
                                         }
                                     }
                                     else {
-                                        par_cmds.erase(par_cmds.begin());
-                                        connectors.erase(connectors.begin());
+                                        if (par_cmds.size() > 0) {
+                                            par_cmds.erase(par_cmds.begin());
+                                        }
+                                        if (connectors.size() > 0) {
+                                            connectors.erase(connectors.begin());
+                                        }
                                     }
                                 }
-                                else { //command ran
-                                    groupCheck = true;
-                                }
+                                groupCheck = true;
                             }
-                            if (connectors.size() > 0) { //erase connector that was just used
+                            if (connectors.size() > 0) {
                                 connectors.erase(connectors.begin());
                             }
                         }
